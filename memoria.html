@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#fff7fb">
+<meta name="description" content="Jogo da Memória com a Bochechinha: duas pessoas, 12 etapas e cada vez mais difícil.">
+<title>Jogo da Memória com a Bochechinha</title>
+<style>
+:root{
+  --bg1:#fff7fb;
+  --bg2:#eef6ff;
+  --ink:#2b2f45;
+  --muted:#6b7280;
+  --blue:#3b82f6;
+  --pink:#ec4899;
+  --gold:#f59e0b;
+  --c:4;
+  --r:4;
+  --fs:20px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:linear-gradient(160deg,var(--bg1) 0%,var(--bg2) 100%) fixed}
+body{min-height:100vh}
+
+/* Cabeçalho */
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:#fff;box-shadow:0 2px 14px rgba(59,130,246,.10);position:sticky;top:0;z-index:5}
+.brand{display:flex;align-items:center;gap:10px}
+.mascot{width:44px;height:44px;animation:bob 2.4s ease-in-out infinite;flex-shrink:0}
+h1{font-size:clamp(16px,4vw,22px);margin:0;line-height:1.15;font-weight:800}
+h1 span{display:block;color:var(--pink);font-weight:700;font-size:.72em}
+
+/* Layout */
+.layout{display:flex;flex-direction:column;align-items:center;gap:16px;padding:14px}
+@media (min-width:960px){
+  .layout{flex-direction:row;align-items:flex-start;justify-content:center;gap:28px;padding:24px}
+}
+
+/* Tabuleiro */
+.boardArea{display:flex;flex-direction:column;align-items:center;gap:10px}
+.info{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;font-weight:700;color:var(--muted);font-size:14px}
+.info span{background:#fff;padding:5px 12px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.board{
+  display:grid;gap:6px;padding:10px;
+  background:#fff;border-radius:18px;
+  box-shadow:0 12px 40px rgba(59,130,246,.15);
+  width:min(94vw,620px,calc(74vh * var(--c) / var(--r)));
+}
+.card{aspect-ratio:1;perspective:700px;cursor:pointer;touch-action:manipulation}
+.inner{position:relative;width:100%;height:100%;transition:transform .45s;transform-style:preserve-3d}
+.card.open .inner{transform:rotateY(180deg)}
+.face{
+  position:absolute;inset:0;
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:var(--fs);line-height:1;
+  box-shadow:0 2px 6px rgba(0,0,0,.08);
+}
+.back{background:linear-gradient(135deg,#ffc2dc,#bfe0ff);font-size:calc(var(--fs) * .9)}
+.front{background:#fff;border:2px solid #dbeafe;transform:rotateY(180deg)}
+.card.matched .front{background:#dcfce7;border-color:#86efac;animation:pulseF .6s ease}
+@keyframes pulseF{
+  0%{transform:rotateY(180deg) scale(1)}
+  50%{transform:rotateY(180deg) scale(1.12)}
+  100%{transform:rotateY(180deg) scale(1)}
+}
+
+/* Lateral */
+.side{width:100%;max-width:440px;display:flex;flex-direction:column;gap:12px}
+@media (min-width:960px){ .side{width:330px;max-width:none} }
+.timers{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tbox{background:#fff;border-radius:14px;padding:10px;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+.tbox small{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:1px}
+.tbox b{font-size:22px;font-variant-numeric:tabular-nums}
+.turn{background:#fff;border-radius:14px;padding:12px;text-align:center;font-size:17px;font-weight:700;min-height:50px;box-shadow:0 2px 10px rgba(0,0,0,.05);display:flex;align-items:center;justify-content:center}
+
+.players{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pl{
+  background:#fff;border-radius:16px;padding:12px;
+  border:2px solid transparent;
+  box-shadow:0 2px 10px rgba(0,0,0,.05);
+  transition:border-color .25s, transform .25s;
+}
+.pl.active{border-color:var(--c);transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,0,0,.10)}
+.plName{color:var(--c);font-weight:800;font-size:17px;display:flex;justify-content:space-between;align-items:center;gap:6px}
+.tag{display:none;background:var(--c);color:#fff;font-size:11px;padding:3px 8px;border-radius:999px;font-weight:700}
+.pl.active .tag{display:inline-block;animation:bob 1.2s ease-in-out infinite}
+.plRow{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-top:6px}
+.plRow b{color:var(--ink);font-size:15px;font-variant-numeric:tabular-nums}
+
+.rank{background:#fff;border-radius:16px;padding:12px 14px;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+.rank h3{margin:0 0 6px;font-size:14px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
+.rank ol{list-style:none;margin:0;padding:0}
+.rank li{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px dashed #e5e7eb;font-size:14px}
+.rank li:last-child{border-bottom:0}
+.rank li span:last-child{color:var(--muted);text-align:right}
+
+/* Botões */
+.btn{background:linear-gradient(135deg,var(--blue),var(--pink));color:#fff;border:0;border-radius:12px;padding:12px 18px;font-weight:700;font-size:15px;cursor:pointer;box-shadow:0 6px 18px rgba(236,72,153,.25);transition:transform .15s}
+.btn:active{transform:scale(.96)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.ghost{background:#fff;color:var(--ink);border:1px solid #cbd5e1;box-shadow:none}
+.btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px}
+.btns .btn{flex:1;min-width:140px}
+
+/* Modais */
+.ov{position:fixed;inset:0;background:rgba(255,255,255,.72);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:20;padding:18px}
+.ov.show{display:flex;animation:fade .3s ease}
+.modal{position:relative;z-index:2;background:#fff;border-radius:24px;padding:26px 22px;text-align:center;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(59,130,246,.2);animation:pop .5s cubic-bezier(.2,1.4,.4,1)}
+.modal h2{margin:6px 0 4px;font-size:28px;font-weight:900}
+.modal p{margin:6px 0}
+.big{font-size:60px;display:inline-block;animation:bob 1.2s ease-in-out infinite}
+.muted{color:var(--muted);font-size:14px}
+.drawName{font-size:40px;font-weight:900;min-height:64px;margin:14px 0;transition:color .1s}
+.drawName.pop{animation:pop .5s}
+#confettiS,#confettiF{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:1}
+.confetti-piece{position:absolute;top:-20px;border-radius:2px;animation:fall linear forwards}
+
+/* Troféu */
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:16px;margin:10px 0 4px;flex-wrap:wrap}
+.trophyBox{display:flex;flex-direction:column;align-items:center}
+.trophy{width:130px;height:auto;animation:shineT 2s ease-in-out infinite}
+.plate{background:linear-gradient(#fde68a,#f59e0b);border-radius:8px;padding:6px 14px;font-weight:900;color:#5b3600;margin-top:-6px;box-shadow:0 3px 8px rgba(0,0,0,.15);max-width:220px;overflow-wrap:anywhere}
+.figure{display:flex;gap:10px;align-items:flex-end}
+.fig{width:110px;height:auto;animation:dance 1s ease-in-out infinite}
+.figure .fig:nth-child(2){animation-delay:.5s}
+
+/* Animações */
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+@keyframes pop{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes dance{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-10px) rotate(2deg)}}
+@keyframes shineT{0%,100%{filter:drop-shadow(0 0 0 #fde68a)}50%{filter:drop-shadow(0 0 14px #fde68a)}}
+
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms !important;animation-iteration-count:1 !important}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <svg class="mascot" viewBox="0 0 64 64" aria-hidden="true">
+      <circle cx="32" cy="32" r="30" fill="#f9a8d4"/>
+      <circle cx="19" cy="37" r="6" fill="#fb7185" opacity=".7"/>
+      <circle cx="45" cy="37" r="6" fill="#fb7185" opacity=".7"/>
+      <circle cx="24" cy="28" r="3.5" fill="#2b2f45"/>
+      <circle cx="40" cy="28" r="3.5" fill="#2b2f45"/>
+      <path d="M24 42 Q32 49 40 42" stroke="#2b2f45" stroke-width="3" fill="none" stroke-linecap="round"/>
+    </svg>
+    <h1>Jogo da Memória <span>com a Bochechinha</span></h1>
+  </div>
+  <button id="newBtn" class="btn ghost">Novo jogo</button>
+</header>
+
+<main class="layout">
+  <section class="boardArea">
+    <div class="info">
+      <span id="stageLabel">Etapa 1 de 12</span>
+      <span id="gridLabel">4 × 4 · 8 pares</span>
+    </div>
+    <div id="board" class="board" aria-label="Tabuleiro de cartas"></div>
+  </section>
+
+  <aside class="side">
+    <div class="timers">
+      <div class="tbox"><small>Tempo da etapa</small><b id="stageTime">00:00</b></div>
+      <div class="tbox"><small>Tempo total</small><b id="totalTime">00:00</b></div>
+    </div>
+
+    <div id="turnBox" class="turn"></div>
+
+    <div class="players">
+      <div class="pl" id="pl0" style="--c:#3b82f6">
+        <div class="plName">Guilherme <span class="tag">Sua vez</span></div>
+        <div class="plRow">Etapas ganhas <b id="sw0">0</b></div>
+        <div class="plRow">Pares nesta etapa <b id="sp0">0</b></div>
+        <div class="plRow">Pares no jogo <b id="tp0">0</b></div>
+      </div>
+      <div class="pl" id="pl1" style="--c:#ec4899">
+        <div class="plName">Jéssica <span class="tag">Sua vez</span></div>
+        <div class="plRow">Etapas ganhas <b id="sw1">0</b></div>
+        <div class="plRow">Pares nesta etapa <b id="sp1">0</b></div>
+        <div class="plRow">Pares no jogo <b id="tp1">0</b></div>
+      </div>
+    </div>
+
+    <div class="rank">
+      <h3>Ranking</h3>
+      <ol id="rank"></ol>
+    </div>
+  </aside>
+</main>
+
+<!-- Sorteio inicial -->
+<div id="startOv" class="ov show">
+  <div class="modal">
+    <div class="big">🎲</div>
+    <h2>Sorteio!</h2>
+    <p class="muted">Quem começa a jogar?</p>
+    <div id="drawName" class="drawName">?</div>
+    <button id="drawBtn" class="btn">Sortear e começar</button>
+  </div>
+</div>
+
+<!-- Fim de etapa -->
+<div id="stageOv" class="ov">
+  <div id="confettiS"></div>
+  <div class="modal">
+    <div class="big">🎉</div>
+    <h2 id="stageTitle">Etapa concluída!</h2>
+    <p id="stageResult"></p>
+    <p id="stageScore" class="muted"></p>
+    <p id="stageTimeTxt" class="muted"></p>
+    <div class="btns">
+      <button id="nextStageBtn" class="btn">Próxima etapa ›</button>
+    </div>
+  </div>
+</div>
+
+<!-- Troféu final -->
+<div id="finalOv" class="ov">
+  <div id="confettiF"></div>
+  <div class="modal" style="max-width:520px">
+    <h2 id="finalTitle">Parabéns!</h2>
+    <div class="podium">
+      <div class="trophyBox">
+        <svg class="trophy" viewBox="0 0 120 130" aria-hidden="true">
+          <path d="M30 22 H14 Q10 22 10 30 Q10 50 32 56" fill="none" stroke="#d4a017" stroke-width="7"/>
+          <path d="M90 22 H106 Q110 22 110 30 Q110 50 88 56" fill="none" stroke="#d4a017" stroke-width="7"/>
+          <path d="M30 14 H90 V52 Q90 84 60 88 Q30 84 30 52 Z" fill="#fcd34d" stroke="#d4a017" stroke-width="3"/>
+          <path d="M60 24 L65 36 L78 37 L68 45 L72 58 L60 50 L48 58 L52 45 L42 37 L55 36 Z" fill="#fff7d1"/>
+          <rect x="54" y="88" width="12" height="18" fill="#d4a017"/>
+          <rect x="36" y="106" width="48" height="14" rx="4" fill="#b7791f"/>
+        </svg>
+        <div id="plate" class="plate"></div>
+      </div>
+      <div id="figure" class="figure"></div>
+    </div>
+    <p id="finalStats" class="muted"></p>
+    <div class="btns">
+      <button id="againBtn" class="btn">Jogar de novo</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const PLAYERS = [
+    { name:'Guilherme', color:'#3b82f6', gender:'m' },
+    { name:'Jéssica',   color:'#ec4899', gender:'f' }
+  ];
+
+  // Etapas: do fácil ao difícil. c = colunas, r = linhas, flip = tempo (ms) até virar de volta no erro
+  const STAGES = [
+    { c:4,  r:4,  flip:1100 },
+    { c:4,  r:5,  flip:1050 },
+    { c:5,  r:6,  flip:1000 },
+    { c:6,  r:6,  flip:950  },
+    { c:6,  r:7,  flip:900  },
+    { c:7,  r:8,  flip:850  },
+    { c:8,  r:8,  flip:800  },
+    { c:8,  r:9,  flip:750  },
+    { c:9,  r:10, flip:700  },
+    { c:10, r:10, flip:650  },
+    { c:10, r:11, flip:600  },
+    { c:10, r:12, flip:550  }
+  ];
+
+  const EMOJIS = "🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐨 🐯 🦁 🐮 🐷 🐸 🐵 🐔 🐧 🐦 🦆 🦉 🦄 🐝 🦋 🐌 🐞 🐢 🐍 🐙 🦀 🐠 🐬 🐳 🦈 🌵 🌲 🌻 🌷 🍄 🍎 🍌 🍉 🍇 🍓 🍒 🍍 🥝 🍅 🥕 🌽 🍕 🍔 🍟 🍩 🍪 🎈 🎁 🎸 🚀 🚗 ⚽ 🏀 🎲 💎 🔑 🔔 ⭐ 🌙 🌈 ⚡ 🔥 🎂 🧁 🍭 🦖 🐘 🐴 🐓 🦩 🦜 🦔 🐿️".split(' ');
+
+  const $ = s => document.querySelector(s);
+  const board = $('#board');
+  let game = null;
+
+  /* ---------- Utilidades ---------- */
+  function shuffle(arr){
+    for(let i = arr.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function fmt(ms){
+    const s = Math.floor(ms / 1000);
+    return String(Math.floor(s / 60)).padStart(2,'0') + ':' + String(s % 60).padStart(2,'0');
+  }
+
+  function spawnConfetti(id){
+    const box = $('#' + id);
+    box.innerHTML = '';
+    const colors = ['#3b82f6','#ec4899','#f59e0b','#22c55e','#a855f7','#fb7185','#38bdf8'];
+    for(let i = 0; i < 130; i++){
+      const s = document.createElement('i');
+      s.className = 'confetti-piece';
+      s.style.left = (Math.random() * 100) + '%';
+      s.style.background = colors[i % colors.length];
+      s.style.width = (6 + Math.random() * 6) + 'px';
+      s.style.height = (10 + Math.random() * 8) + 'px';
+      s.style.animationDuration = (2.5 + Math.random() * 2.5) + 's';
+      s.style.animationDelay = (Math.random() * 0.8) + 's';
+      box.appendChild(s);
+    }
+  }
+
+  function figureSVG(g){
+    if(g === 'm'){
+      return `<svg class="fig" viewBox="0 0 100 160" aria-hidden="true">
+        <line x1="43" y1="104" x2="39" y2="150" stroke="#1e3a8a" stroke-width="12" stroke-linecap="round"/>
+        <line x1="57" y1="104" x2="61" y2="150" stroke="#1e3a8a" stroke-width="12" stroke-linecap="round"/>
+        <line x1="36" y1="62" x2="14" y2="26" stroke="#3b82f6" stroke-width="10" stroke-linecap="round"/>
+        <line x1="64" y1="62" x2="86" y2="26" stroke="#3b82f6" stroke-width="10" stroke-linecap="round"/>
+        <circle cx="12" cy="22" r="6" fill="#f5c9a1"/>
+        <circle cx="88" cy="22" r="6" fill="#f5c9a1"/>
+        <rect x="34" y="48" width="32" height="60" rx="10" fill="#3b82f6"/>
+        <circle cx="50" cy="30" r="19" fill="#f5c9a1"/>
+        <path d="M31 28 Q32 8 50 9 Q68 8 69 28 Q62 18 50 19 Q38 18 31 28 Z" fill="#3b2a1a"/>
+        <circle cx="43" cy="31" r="2.5" fill="#2b2f45"/>
+        <circle cx="57" cy="31" r="2.5" fill="#2b2f45"/>
+        <path d="M43 40 Q50 46 57 40" stroke="#2b2f45" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      </svg>`;
+    }
+    return `<svg class="fig" viewBox="0 0 100 160" aria-hidden="true">
+      <path d="M28 34 Q50 -6 72 34 L76 84 Q50 94 24 84 Z" fill="#7c3f1d"/>
+      <line x1="44" y1="120" x2="41" y2="150" stroke="#f5c9a1" stroke-width="9" stroke-linecap="round"/>
+      <line x1="56" y1="120" x2="59" y2="150" stroke="#f5c9a1" stroke-width="9" stroke-linecap="round"/>
+      <line x1="38" y1="60" x2="18" y2="28" stroke="#f5c9a1" stroke-width="9" stroke-linecap="round"/>
+      <line x1="62" y1="60" x2="82" y2="28" stroke="#f5c9a1" stroke-width="9" stroke-linecap="round"/>
+      <circle cx="16" cy="24" r="6" fill="#f5c9a1"/>
+      <circle cx="84" cy="24" r="6" fill="#f5c9a1"/>
+      <path d="M38 52 L62 52 L78 124 L22 124 Z" fill="#ec4899"/>
+      <circle cx="50" cy="30" r="18" fill="#f5c9a1"/>
+      <path d="M32 28 Q34 10 50 11 Q66 10 68 28 Q58 18 50 19 Q42 18 32 28 Z" fill="#7c3f1d"/>
+      <circle cx="66" cy="13" r="4" fill="#fde68a"/>
+      <circle cx="43" cy="32" r="2.5" fill="#2b2f45"/>
+      <circle cx="57" cy="32" r="2.5" fill="#2b2f45"/>
+      <path d="M43 40 Q50 46 57 40" stroke="#2b2f45" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    </svg>`;
+  }
+
+  /* ---------- Estado de jogo ---------- */
+  function newGame(starter){
+    return {
+      starter,
+      stageIdx: 0,
+      stageStarter: starter,
+      turn: starter,
+      cards: [],
+      flipped: [],
+      lock: false,
+      running: false,
+      stagesWon: [0, 0],
+      totalPairs: [0, 0],
+      stagePairs: [0, 0],
+      stageStart: 0,
+      stageRunning: false,
+      totalStart: 0,
+      totalRunning: false
+    };
+  }
+
+  /* ---------- Renderização ---------- */
+  function fitBoard(){
+    if(!game) return;
+    const st = STAGES[game.stageIdx];
+    const cell = (board.clientWidth - 20 - 6 * (st.c - 1)) / st.c;
+    board.style.setProperty('--fs', Math.max(10, cell * 0.5) + 'px');
+  }
+
+  function renderBoard(){
+    const st = STAGES[game.stageIdx];
+    board.style.setProperty('--c', st.c);
+    board.style.setProperty('--r', st.r);
+    board.style.gridTemplateColumns = `repeat(${st.c}, 1fr)`;
+    board.innerHTML = game.cards.map((c, i) =>
+      `<div class="card" data-i="${i}"><div class="inner"><div class="face back">😊</div><div class="face front">${c.sym}</div></div></div>`
+    ).join('');
+    fitBoard();
+  }
+
+  function setCardClass(i){
+    const el = board.children[i];
+    const c = game.cards[i];
+    el.classList.toggle('open', c.open);
+    el.classList.toggle('matched', c.matched);
+  }
+
+  function renderRank(){
+    const order = [0, 1].sort((a, b) =>
+      (game.stagesWon[b] - game.stagesWon[a]) || (game.totalPairs[b] - game.totalPairs[a])
+    );
+    const medal = ['🥇', '🥈'];
+    $('#rank').innerHTML = order.map((p, i) =>
+      `<li><span>${medal[i]} ${PLAYERS[p].name}</span><span>${game.stagesWon[p]} etapa(s) · ${game.totalPairs[p]} pares</span></li>`
+    ).join('');
+  }
+
+  function updateUI(){
+    const st = STAGES[game.stageIdx];
+    $('#stageLabel').textContent = `Etapa ${game.stageIdx + 1} de ${STAGES.length}`;
+    $('#gridLabel').textContent = `${st.c} × ${st.r} · ${st.c * st.r / 2} pares`;
+    [0, 1].forEach(i => {
+      $('#pl' + i).classList.toggle('active', game.running && game.turn === i);
+      $('#sw' + i).textContent = game.stagesWon[i];
+      $('#sp' + i).textContent = game.stagePairs[i];
+      $('#tp' + i).textContent = game.totalPairs[i];
+    });
+    if(game.running){
+      const t = PLAYERS[game.turn];
+      $('#turnBox').innerHTML = `Vez de&nbsp;<b style="color:${t.color}">${t.name}</b>`;
+    } else {
+      $('#turnBox').innerHTML = '';
+    }
+    renderRank();
+  }
+
+  /* ---------- Cronômetros ---------- */
+  setInterval(() => {
+    if(!game) return;
+    const now = performance.now();
+    if(game.stageRunning) $('#stageTime').textContent = fmt(now - game.stageStart);
+    if(game.totalRunning) $('#totalTime').textContent = fmt(now - game.totalStart);
+  }, 250);
+
+  /* ---------- Fluxo do jogo ---------- */
+  function startGame(starter){
+    game = newGame(starter);
+    game.totalStart = performance.now();
+    game.totalRunning = true;
+    $('#totalTime').textContent = '00:00';
+    startStage();
+  }
+
+  function startStage(){
+    const st = STAGES[game.stageIdx];
+    const pairs = st.c * st.r / 2;
+    const syms = shuffle(EMOJIS.slice()).slice(0, pairs);
+    game.cards = shuffle([...syms, ...syms]).map(sym => ({ sym, open: false, matched: false }));
+    game.flipped = [];
+    game.lock = false;
+    game.running = true;
+    game.stagePairs = [0, 0];
+    game.turn = game.stageStarter;
+    game.stageStart = performance.now();
+    game.stageRunning = true;
+    $('#stageTime').textContent = '00:00';
+    renderBoard();
+    updateUI();
+  }
+
+  function flip(i){
+    if(!game || !game.running || game.lock) return;
+    const c = game.cards[i];
+    if(c.open || c.matched) return;
+
+    c.open = true;
+    setCardClass(i);
+    game.flipped.push(i);
+    if(game.flipped.length < 2) return;
+
+    game.lock = true;
+    const [a, b] = game.flipped;
+
+    if(game.cards[a].sym === game.cards[b].sym){
+      // Acertou: o mesmo jogador continua
+      game.cards[a].matched = true;
+      game.cards[b].matched = true;
+      setCardClass(a);
+      setCardClass(b);
+      game.stagePairs[game.turn]++;
+      game.totalPairs[game.turn]++;
+      game.flipped = [];
+      game.lock = false;
+      updateUI();
+      if(game.cards.every(x => x.matched)) endStage();
+    } else {
+      // Errou: fecha as duas e passa a vez
+      setTimeout(() => {
+        game.cards[a].open = false;
+        game.cards[b].open = false;
+        setCardClass(a);
+        setCardClass(b);
+        game.flipped = [];
+        game.turn = 1 - game.turn;
+        game.lock = false;
+        updateUI();
+      }, STAGES[game.stageIdx].flip);
+    }
+  }
+
+  function endStage(){
+    game.running = false;
+    game.stageRunning = false;
+    const ms = performance.now() - game.stageStart;
+    $('#stageTime').textContent = fmt(ms);
+
+    const [a, b] = game.stagePairs;
+    let w = -1;
+    if(a > b) w = 0;
+    else if(b > a) w = 1;
+    if(w >= 0) game.stagesWon[w]++;
+
+    updateUI();
+
+    const last = game.stageIdx === STAGES.length - 1;
+    $('#stageTitle').textContent = `Etapa ${game.stageIdx + 1} concluída!`;
+    $('#stageResult').innerHTML = w >= 0
+      ? `<b style="color:${PLAYERS[w].color}">${PLAYERS[w].name}</b> venceu esta etapa!`
+      : 'Empate nesta etapa!';
+    $('#stageScore').textContent = `${PLAYERS[0].name}: ${a} pares · ${PLAYERS[1].name}: ${b} pares`;
+    $('#stageTimeTxt').textContent = `Tempo da etapa: ${fmt(ms)}`;
+    $('#nextStageBtn').textContent = last ? 'Ver troféu 🏆' : 'Próxima etapa ›';
+
+    $('#stageOv').classList.add('show');
+    spawnConfetti('confettiS');
+  }
+
+  function nextStage(){
+    $('#stageOv').classList.remove('show');
+    if(game.stageIdx === STAGES.length - 1){
+      showFinal();
+      return;
+    }
+    game.stageIdx++;
+    game.stageStarter = 1 - game.stageStarter; // alterna quem começa cada etapa
+    startStage();
+  }
+
+  function showFinal(){
+    game.totalRunning = false;
+    const total = performance.now() - game.totalStart;
+    $('#totalTime').textContent = fmt(total);
+
+    const [sa, sb] = game.stagesWon;
+    const [ta, tb] = game.totalPairs;
+    let w = -1;
+    if(sa !== sb) w = sa > sb ? 0 : 1;
+    else if(ta !== tb) w = ta > tb ? 0 : 1;
+
+    if(w >= 0){
+      $('#finalTitle').textContent = `${PLAYERS[w].name} venceu o jogo!`;
+      $('#plate').textContent = PLAYERS[w].name;
+      $('#figure').innerHTML = figureSVG(PLAYERS[w].gender);
+    } else {
+      $('#finalTitle').textContent = 'Empate!';
+      $('#plate').textContent = 'Guilherme e Jéssica';
+      $('#figure').innerHTML = figureSVG('m') + figureSVG('f');
+    }
+
+    $('#finalStats').innerHTML =
+      `Etapas ganhas: ${PLAYERS[0].name} ${sa} × ${sb} ${PLAYERS[1].name}<br>` +
+      `Pares no jogo: ${ta} × ${tb}<br>` +
+      `Tempo total: ${fmt(total)}`;
+
+    $('#finalOv').classList.add('show');
+    spawnConfetti('confettiF');
+  }
+
+  /* ---------- Sorteio inicial ---------- */
+  function runDraw(){
+    const starter = Math.random() < 0.5 ? 0 : 1;
+    const btn = $('#drawBtn');
+    const nameEl = $('#drawName');
+    btn.disabled = true;
+
+    let n = 0;
+    let delay = 60;
+    const total = 22;
+    const step = () => {
+      n++;
+      const p = PLAYERS[n % 2];
+      nameEl.textContent = p.name;
+      nameEl.style.color = p.color;
+      if(n < total){
+        delay *= 1.1;
+        setTimeout(step, delay);
+      } else {
+        const s = PLAYERS[starter];
+        nameEl.textContent = s.name;
+        nameEl.style.color = s.color;
+        nameEl.classList.remove('pop');
+        void nameEl.offsetWidth;
+        nameEl.classList.add('pop');
+        setTimeout(() => {
+          $('#startOv').classList.remove('show');
+          btn.disabled = false;
+          startGame(starter);
+        }, 1400);
+      }
+    };
+    step();
+  }
+
+  function resetToStart(){
+    $('#stageOv').classList.remove('show');
+    $('#finalOv').classList.remove('show');
+    game = newGame(0);
+    board.innerHTML = '';
+    $('#stageTime').textContent = '00:00';
+    $('#totalTime').textContent = '00:00';
+    $('#drawBtn').disabled = false;
+    $('#drawName').textContent = '?';
+    $('#drawName').style.color = '';
+    $('#startOv').classList.add('show');
+    updateUI();
+  }
+
+  /* ---------- Eventos ---------- */
+  board.addEventListener('click', e => {
+    const el = e.target.closest('.card');
+    if(el) flip(Number(el.dataset.i));
+  });
+  $('#drawBtn').addEventListener('click', runDraw);
+  $('#nextStageBtn').addEventListener('click', nextStage);
+  $('#againBtn').addEventListener('click', resetToStart);
+  $('#newBtn').addEventListener('click', resetToStart);
+  window.addEventListener('resize', fitBoard);
+
+  /* ---------- Início ---------- */
+  game = newGame(0);
+  updateUI();
+})();
+</script>
+</body>
+</html>
